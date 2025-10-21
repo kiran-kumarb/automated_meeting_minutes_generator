@@ -1,0 +1,20 @@
+{
+  "name": "pesu_rr_cse_e_p34_automated_meeting_minutes_generator_syntaxsquad",
+  "version": "1.0.0",
+  "description": "**Project ID:** P34   **Course:** UE23CS341A   **Academic Year:** 2025   **Semester:** 5th Sem   **Campus:** RR   **Branch:** CSE   **Section:** E   **Team:** SyntaxSquad",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

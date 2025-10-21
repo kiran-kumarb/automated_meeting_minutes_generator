@@ -32,51 +32,51 @@ This repository contains the source code and documentation for the Automated Mee
 
 - [@rbanginwar](https://github.com/rbanginwar)
 
-
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - [List your prerequisites here]
 
 ### Installation
-1. Clone the repository
-   ```bash
-   git clone https://github.com/pestechnology/PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad.git
-   cd PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad
-   ```
 
-2. Install dependencies
-   ```bash
-   # Add your installation commands here
-   ```
+1.  Clone the repository
 
-3. Run the application
-   ```bash
-   # Add your run commands here
-   ```
+    ```bash
+    git clone https://github.com/pestechnology/PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad.gitcd PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad
+    ```
+
+2.  Install dependencies
+
+    ```bash
+    npm cinpm install
+    ```
+
+3.  Run the application
+
+    ```bash
+    npm start npm run dev
+    ```
 
 ## 📁 Project Structure
 
 ```
-PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad/
-├── src/                 # Source code
-├── docs/               # Documentation
-├── tests/              # Test files
-├── .github/            # GitHub workflows and templates
-├── README.md          # This file
-└── ...
+PESU_RR_CSE_E_P34_Automated_Meeting_Minutes_Generator_SyntaxSquad/├── src/                 # Source code├── docs/               # Documentation├── tests/              # Test files├── .github/            # GitHub workflows and templates├── README.md          # This file└── ...
 ```
 
 ## 🛠️ Development Guidelines
 
 ### Branching Strategy
+
 - `main`: Production-ready code
 - `develop`: Development branch
 - `feature/*`: Feature branches
 - `bugfix/*`: Bug fix branches
 
 ### Commit Messages
+
 Follow conventional commit format:
+
 - `feat:` New features
 - `fix:` Bug fixes
 - `docs:` Documentation changes
@@ -85,11 +85,12 @@ Follow conventional commit format:
 - `test:` Test-related changes
 
 ### Code Review Process
-1. Create feature branch from `develop`
-2. Make changes and commit
-3. Create Pull Request to `develop`
-4. Request review from team members
-5. Merge after approval
+
+1.  Create feature branch from `develop`
+2.  Make changes and commit
+3.  Create Pull Request to `develop`
+4.  Request review from team members
+5.  Merge after approval
 
 ## 📚 Documentation
 
@@ -100,11 +101,7 @@ Follow conventional commit format:
 ## 🧪 Testing
 
 ```bash
-# Run tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
+# Run testsnpm test# Run tests with coveragenpm run test:coverage
 ```
 
 ## 📄 License
