@@ -114,3 +114,9 @@ This project is developed for educational purposes as part of the PES University
 **Institution:** PES University  
 **Academic Year:** 2025  
 **Semester:** 5th Sem
+
+## pre-requirements
+
+- express → server framework
+- multer → file‑upload middleware
+- cors → lets Postman or a frontend connect safely

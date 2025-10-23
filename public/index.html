@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Automated Meeting Minutes Generator</title>
+  <style>
+    body { max-width: 480px; margin: 40px auto; font-family: sans-serif; }
+    h1 { text-align: center; }
+    #upload-status { margin-top: 16px; color: green; }
+    label, input, button { display: block; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>Meeting Minutes Audio Upload</h1>
+  <form id="upload-form">
+    <label for="audio">Select an audio file (.mp3, .wav):</label>
+    <input type="file" id="audio" name="audio" accept=".mp3,.wav,audio/*" required />
+    <button type="submit">Upload Audio</button>
+  </form>
+  <div id="upload-status"></div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const statusDiv = document.getElementById('upload-status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '';
+      const fileInput = document.getElementById('audio');
+      if (!fileInput.files.length) {
+        statusDiv.textContent = 'Please select an audio file.';
+        return;
+      }
+      const formData = new FormData();
+      formData.append('audio', fileInput.files[0]);
+
+      try {
+        const res = await fetch('http://localhost:3000/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) {
+          statusDiv.textContent = 'Upload failed: ' + (await res.text());
+        } else {
+          const json = await res.json();
+          statusDiv.textContent = 'Upload succeeded: ' + json.filename;
+        }
+      } catch (err) {
+        statusDiv.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
