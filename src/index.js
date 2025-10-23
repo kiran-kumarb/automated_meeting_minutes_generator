@@ -34,6 +34,14 @@ app.post('/upload', upload.single('audio'), (req, res) => {
 });
 
 app.use('/uploads', express.static(uploadDir));
+app.use(express.json()); // Add this if not already present
+
+app.post('/transcribe', (req, res) => {
+  const { filename } = req.body;
+  // Stub transcription response
+  res.json({ transcript: `This is a stub transcript for ${filename}` });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
