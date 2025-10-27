@@ -64,7 +64,7 @@ app.post("/transcribe", (req, res) => {
   if (!filename) {
     return res.status(400).json({ error: "Filename missing" });
   }
-  res.json({ transcript: `This is a stub transcript for ${filename}` });
+  res.json({ transcript: `This is a  transcript for ${filename}` });
 });
 
 // ---------- Helper Function: Extract Action Items ----------
