@@ -4,11 +4,12 @@
 // =============================================
 
 // ---------- Import Required Modules ----------
-const express = require("express");   // For creating server and routes
-const cors = require("cors");          // For handling cross-origin requests
-const multer = require("multer");      // For handling file uploads
-const path = require("path");          // For working with file & directory paths
-const fs = require("fs");              // For file system operations
+const express = require("express");
+const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const { spawn } = require("child_process");
 
 // ---------- Initialize App ----------
 const app = express();
@@ -16,7 +17,7 @@ const app = express();
 // Enable CORS and serve static files from "public" folder
 app.use(cors());
 app.use(express.static("public"));
-app.use(express.json()); // For parsing JSON bodies
+app.use(express.json());
 
 // ---------- Ensure Upload Directory Exists ----------
 const uploadPath = path.join(__dirname, "uploads");
@@ -58,21 +59,60 @@ app.post("/upload", upload.single("audio"), (req, res) => {
 // Serve uploaded files (static hosting)
 app.use("/uploads", express.static(uploadPath));
 
-// ---------- Transcription Stub API ----------
+// ---------- Transcribe using Python ASR ----------
 app.post("/transcribe", (req, res) => {
   const { filename } = req.body;
   if (!filename) {
     return res.status(400).json({ error: "Filename missing" });
   }
-  res.json({ transcript: `This is a  transcript for ${filename}` });
+
+  const audioFilePath = path.join(uploadPath, filename);
+  const pythonProcess = spawn("python", ["transcribe.py", audioFilePath]);
+
+  let transcript = "";
+  pythonProcess.stdout.on("data", (data) => {
+    transcript += data.toString();
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  pythonProcess.on("close", (code) => {
+    res.json({ transcript: transcript.trim() });
+  });
+});
+
+// ---------- Edit Transcript API ----------
+let editedTranscripts = {}; // For demo; use a DB for production
+
+app.post("/edit-transcript", (req, res) => {
+  const { filename, transcript } = req.body;
+  if (!filename || !transcript) {
+    return res.status(400).json({ error: "Filename and transcript required" });
+  }
+  editedTranscripts[filename] = transcript;
+  res.json({ message: "Transcript saved successfully!" });
+});
+
+app.get("/get-edited-transcript/:filename", (req, res) => {
+  const { filename } = req.params;
+  const transcript = editedTranscripts[filename];
+  if (!transcript) {
+    return res.status(404).json({ error: "No edited transcript found" });
+  }
+  res.json({ transcript });
 });
 
 // ---------- Helper Function: Extract Action Items ----------
+const keywordList = [
+  "action", "todo", "task", "follow-up", "deadline", "assign", "complete", "review", "finish"
+];
+
 function extractActionItems(transcript) {
-  const keywords = ["action", "todo", "task", "follow-up", "deadline"];
-  const sentences = transcript.split(/[.!?]/).map((s) => s.trim());
+  const sentences = transcript.split(/[.!?]/).map((s) => s.trim()).filter(Boolean);
   return sentences.filter((sentence) =>
-    keywords.some((keyword) => sentence.toLowerCase().includes(keyword))
+    keywordList.some((keyword) => sentence.toLowerCase().includes(keyword))
   );
 }
 
@@ -84,6 +124,29 @@ app.post("/extract-actions", (req, res) => {
   }
   const actionItems = extractActionItems(transcript);
   res.json({ actionItems });
+});
+
+// ---------- Generate Meeting Minutes Document ----------
+app.post("/generate-minutes", (req, res) => {
+  const { filename, transcript, actions, metadata } = req.body;
+  if (!filename || !transcript || !actions || !metadata) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const content = `
+Meeting Title: ${metadata.title}
+Date: ${metadata.date}
+Organizer: ${metadata.organizer}
+Attendees: ${metadata.attendees}
+
+--- Transcript ---
+${transcript}
+
+--- Action Items ---
+${actions.map(a => `- ${a}`).join("\n")}
+  `;
+  const outpath = path.join(uploadPath, filename.replace(/\.[^/.]+$/, ".txt"));
+  fs.writeFileSync(outpath, content, "utf-8");
+  res.json({ message: "Minutes generated", download: `/uploads/${path.basename(outpath)}` });
 });
 
 // ---------- Export App for Testing ----------

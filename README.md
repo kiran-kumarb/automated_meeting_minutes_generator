@@ -117,6 +117,10 @@ This project is developed for educational purposes as part of the PES University
 
 ## pre-requirements
 
-- express → server framework
-- multer → file‑upload middleware
-- cors → lets Postman or a frontend connect safely
+- express → server framework- multer → file‑upload middleware- cors → lets Postman or a frontend connect safely
+
+pip install -U openai-whisper
+
+pip install SpeechRecognition
+pip install pydub
+pip install ffmpeg

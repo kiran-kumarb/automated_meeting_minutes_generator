@@ -5,29 +5,39 @@
   <title>Automated Meeting Minutes Generator</title>
   <style>
     body {
-      max-width: 480px;
+      max-width: 540px;
       margin: 40px auto;
       font-family: Arial, sans-serif;
     }
     h1 {
       text-align: center;
     }
-    #upload-status {
+    #upload-status, #edit-status, #action-items-label {
       margin-top: 16px;
       color: green;
     }
     label,
     input,
-    button {
+    button,
+    textarea {
       display: block;
       margin: 16px 0;
     }
-    #transcript-preview {
-      white-space: pre-wrap;
+    #transcript-preview, #edit-transcript-text {
+      width: 100%;
       background: #f4f4f4;
       padding: 10px;
       border-radius: 4px;
       min-height: 100px;
+    }
+    #edit-transcript-text {
+      background: #fffed8;
+    }
+    #action-items-list {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      min-height: 60px;
     }
   </style>
 </head>
@@ -43,6 +53,15 @@
   <button id="transcribe-btn" disabled>Get Transcript</button>
   <pre id="transcript-preview"></pre>
 
+  <label for="edit-transcript-text">Edit Transcript Before Extracting Action Items:</label>
+  <textarea id="edit-transcript-text" rows="7" disabled></textarea>
+  <button id="save-edit-btn" disabled>Save Edits</button>
+  <div id="edit-status"></div>
+
+  <button id="extract-actions-btn" disabled>Extract Action Items</button>
+  <div id="action-items-label"></div>
+  <pre id="action-items-list"></pre>
+
   <div id="upload-status"></div>
 
   <script>
@@ -50,20 +69,30 @@
     const statusDiv = document.getElementById("upload-status");
     const transcribeBtn = document.getElementById("transcribe-btn");
     const transcriptPreview = document.getElementById("transcript-preview");
+    const editTextarea = document.getElementById("edit-transcript-text");
+    const saveEditBtn = document.getElementById("save-edit-btn");
+    const editStatus = document.getElementById("edit-status");
+    const extractActionsBtn = document.getElementById("extract-actions-btn");
+    const actionItemsLabel = document.getElementById("action-items-label");
+    const actionItemsList = document.getElementById("action-items-list");
     let lastUploadedFilename = null;
 
+    // Upload audio
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       statusDiv.textContent = "";
       transcriptPreview.textContent = "";
-      const fileInput = document.getElementById("audio");
-      if (!fileInput.files.length) {
+      editTextarea.value = "";
+      editTextarea.disabled = true;
+      saveEditBtn.disabled = true;
+      extractActionsBtn.disabled = true;
+      if (!document.getElementById("audio").files.length) {
         statusDiv.textContent = "Please select an audio file.";
         transcribeBtn.disabled = true;
         return;
       }
       const formData = new FormData();
-      formData.append("audio", fileInput.files[0]);
+      formData.append("audio", document.getElementById("audio").files[0]);
 
       try {
         const res = await fetch("http://localhost:3000/upload", {
@@ -85,6 +114,7 @@
       }
     });
 
+    // Transcribe
     transcribeBtn.addEventListener("click", async () => {
       if (!lastUploadedFilename) return;
       try {
@@ -95,12 +125,68 @@
         });
         if (!res.ok) {
           transcriptPreview.textContent = "Failed to get transcript.";
+          editTextarea.disabled = true;
+          saveEditBtn.disabled = true;
         } else {
           const data = await res.json();
           transcriptPreview.textContent = data.transcript;
+          editTextarea.value = data.transcript;
+          editTextarea.disabled = false;
+          saveEditBtn.disabled = false;
         }
       } catch (err) {
         transcriptPreview.textContent = "Error: " + err.message;
+        editTextarea.disabled = true;
+        saveEditBtn.disabled = true;
+      }
+    });
+
+    // Save edited transcript
+    saveEditBtn.addEventListener("click", async () => {
+      if (!lastUploadedFilename || !editTextarea.value.trim()) return;
+      try {
+        const res = await fetch("http://localhost:3000/edit-transcript", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: lastUploadedFilename, transcript: editTextarea.value }),
+        });
+        if (!res.ok) {
+          editStatus.textContent = "Failed to save edits.";
+          extractActionsBtn.disabled = true;
+        } else {
+          editStatus.textContent = "Transcript saved! You can now extract action items.";
+          extractActionsBtn.disabled = false;
+        }
+      } catch (err) {
+        editStatus.textContent = "Error: " + err.message;
+        extractActionsBtn.disabled = true;
+      }
+    });
+
+    // Extract Action Items
+    extractActionsBtn.addEventListener("click", async () => {
+      const transcript = editTextarea.value.trim();
+      if (!transcript) {
+        actionItemsLabel.textContent = "No transcript to process.";
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:3000/extract-actions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript }),
+        });
+        if (!res.ok) {
+          actionItemsLabel.textContent = "Failed to extract action items.";
+          actionItemsList.textContent = "";
+        } else {
+          const data = await res.json();
+          actionItemsLabel.textContent = "Extracted Action Items:";
+          actionItemsList.textContent = data.actionItems.length ? data.actionItems.join("\n") : "(None found)";
+        }
+      } catch (err) {
+        actionItemsLabel.textContent = "Error extracting action items.";
+        actionItemsList.textContent = err.message;
       }
     });
   </script>
