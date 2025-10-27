@@ -1,52 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Automated Meeting Minutes Generator</title>
   <style>
-    body { max-width: 480px; margin: 40px auto; font-family: sans-serif; }
-    h1 { text-align: center; }
-    #upload-status { margin-top: 16px; color: green; }
-    label, input, button { display: block; margin: 16px 0; }
+    body {
+      max-width: 480px;
+      margin: 40px auto;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      text-align: center;
+    }
+    #upload-status {
+      margin-top: 16px;
+      color: green;
+    }
+    label,
+    input,
+    button {
+      display: block;
+      margin: 16px 0;
+    }
+    #transcript-preview {
+      white-space: pre-wrap;
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      min-height: 100px;
+    }
   </style>
 </head>
 <body>
   <h1>Meeting Minutes Audio Upload</h1>
+
   <form id="upload-form">
     <label for="audio">Select an audio file (.mp3, .wav):</label>
     <input type="file" id="audio" name="audio" accept=".mp3,.wav,audio/*" required />
     <button type="submit">Upload Audio</button>
   </form>
+
+  <button id="transcribe-btn" disabled>Get Transcript</button>
+  <pre id="transcript-preview"></pre>
+
   <div id="upload-status"></div>
 
   <script>
-    const form = document.getElementById('upload-form');
-    const statusDiv = document.getElementById('upload-status');
+    const form = document.getElementById("upload-form");
+    const statusDiv = document.getElementById("upload-status");
+    const transcribeBtn = document.getElementById("transcribe-btn");
+    const transcriptPreview = document.getElementById("transcript-preview");
+    let lastUploadedFilename = null;
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      statusDiv.textContent = '';
-      const fileInput = document.getElementById('audio');
+      statusDiv.textContent = "";
+      transcriptPreview.textContent = "";
+      const fileInput = document.getElementById("audio");
       if (!fileInput.files.length) {
-        statusDiv.textContent = 'Please select an audio file.';
+        statusDiv.textContent = "Please select an audio file.";
+        transcribeBtn.disabled = true;
         return;
       }
       const formData = new FormData();
-      formData.append('audio', fileInput.files[0]);
+      formData.append("audio", fileInput.files[0]);
 
       try {
-        const res = await fetch('http://localhost:3000/upload', {
-          method: 'POST',
-          body: formData
+        const res = await fetch("http://localhost:3000/upload", {
+          method: "POST",
+          body: formData,
         });
         if (!res.ok) {
-          statusDiv.textContent = 'Upload failed: ' + (await res.text());
+          statusDiv.textContent = "Upload failed: " + (await res.text());
+          transcribeBtn.disabled = true;
         } else {
           const json = await res.json();
-          statusDiv.textContent = 'Upload succeeded: ' + json.filename;
+          statusDiv.textContent = "Upload succeeded: " + json.filename;
+          lastUploadedFilename = json.filename;
+          transcribeBtn.disabled = false;
         }
       } catch (err) {
-        statusDiv.textContent = 'Error: ' + err.message;
+        statusDiv.textContent = "Error: " + err.message;
+        transcribeBtn.disabled = true;
+      }
+    });
+
+    transcribeBtn.addEventListener("click", async () => {
+      if (!lastUploadedFilename) return;
+      try {
+        const res = await fetch("http://localhost:3000/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: lastUploadedFilename }),
+        });
+        if (!res.ok) {
+          transcriptPreview.textContent = "Failed to get transcript.";
+        } else {
+          const data = await res.json();
+          transcriptPreview.textContent = data.transcript;
+        }
+      } catch (err) {
+        transcriptPreview.textContent = "Error: " + err.message;
       }
     });
   </script>
