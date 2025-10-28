@@ -2,193 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Automated Meeting Minutes Generator</title>
-  <style>
-    body {
-      max-width: 540px;
-      margin: 40px auto;
-      font-family: Arial, sans-serif;
-    }
-    h1 {
-      text-align: center;
-    }
-    #upload-status, #edit-status, #action-items-label {
-      margin-top: 16px;
-      color: green;
-    }
-    label,
-    input,
-    button,
-    textarea {
-      display: block;
-      margin: 16px 0;
-    }
-    #transcript-preview, #edit-transcript-text {
-      width: 100%;
-      background: #f4f4f4;
-      padding: 10px;
-      border-radius: 4px;
-      min-height: 100px;
-    }
-    #edit-transcript-text {
-      background: #fffed8;
-    }
-    #action-items-list {
-      background: #f4f4f4;
-      padding: 10px;
-      border-radius: 4px;
-      min-height: 60px;
-    }
-  </style>
+  <title>Meeting Minutes Generator</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Meeting Minutes Audio Upload</h1>
+  <main class="container">
+    <h1 class="title">✨ Automated Meeting Minutes Generator</h1>
 
-  <form id="upload-form">
-    <label for="audio">Select an audio file (.mp3, .wav):</label>
-    <input type="file" id="audio" name="audio" accept=".mp3,.wav,audio/*" required />
-    <button type="submit">Upload Audio</button>
-  </form>
+    <form id="upload-form" class="form">
+      <label for="audio" class="label">Upload your meeting audio</label>
+      <input type="file" id="audio" name="audio" accept=".mp3,.wav,audio/*" required class="file-input" />
+      <button type="submit" class="btn primary">Upload Audio</button>
+    </form>
+    
+    <div id="loading-message" style="display:none; color: blue; font-weight: bold; margin-top: 10px;">Transcribing please wait...</div>
+    <button id="transcribe-btn" disabled class="btn secondary">Transcribe Audio</button>
 
-  <button id="transcribe-btn" disabled>Get Transcript</button>
-  <pre id="transcript-preview"></pre>
+    <div id="loading-indicator" class="loading" hidden>
 
-  <label for="edit-transcript-text">Edit Transcript Before Extracting Action Items:</label>
-  <textarea id="edit-transcript-text" rows="7" disabled></textarea>
-  <button id="save-edit-btn" disabled>Save Edits</button>
-  <div id="edit-status"></div>
 
-  <button id="extract-actions-btn" disabled>Extract Action Items</button>
-  <div id="action-items-label"></div>
-  <pre id="action-items-list"></pre>
+    <section class="output">
+      <h2 class="section-title">Transcript Preview</h2>
+      <pre id="transcript-preview" class="transcript"></pre>
 
-  <div id="upload-status"></div>
+      <label for="edit-transcript-text" class="label">Edit Transcript</label>
+      <textarea id="edit-transcript-text" rows="6" disabled class="textarea"></textarea>
+      <button id="save-edit-btn" disabled class="btn primary">Save Transcript</button>
+      <div id="edit-status" class="status"></div>
 
-  <script>
-    const form = document.getElementById("upload-form");
-    const statusDiv = document.getElementById("upload-status");
-    const transcribeBtn = document.getElementById("transcribe-btn");
-    const transcriptPreview = document.getElementById("transcript-preview");
-    const editTextarea = document.getElementById("edit-transcript-text");
-    const saveEditBtn = document.getElementById("save-edit-btn");
-    const editStatus = document.getElementById("edit-status");
-    const extractActionsBtn = document.getElementById("extract-actions-btn");
-    const actionItemsLabel = document.getElementById("action-items-label");
-    const actionItemsList = document.getElementById("action-items-list");
-    let lastUploadedFilename = null;
+      <button id="extract-actions-btn" disabled class="btn accent">Extract Action Items</button>
+      <div id="action-items-label" class="status"></div>
+      <pre id="action-items-list" class="transcript"></pre>
+    </section>
 
-    // Upload audio
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      statusDiv.textContent = "";
-      transcriptPreview.textContent = "";
-      editTextarea.value = "";
-      editTextarea.disabled = true;
-      saveEditBtn.disabled = true;
-      extractActionsBtn.disabled = true;
-      if (!document.getElementById("audio").files.length) {
-        statusDiv.textContent = "Please select an audio file.";
-        transcribeBtn.disabled = true;
-        return;
-      }
-      const formData = new FormData();
-      formData.append("audio", document.getElementById("audio").files[0]);
+    <div id="upload-status" class="status"></div>
+  </main>
 
-      try {
-        const res = await fetch("http://localhost:3000/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          statusDiv.textContent = "Upload failed: " + (await res.text());
-          transcribeBtn.disabled = true;
-        } else {
-          const json = await res.json();
-          statusDiv.textContent = "Upload succeeded: " + json.filename;
-          lastUploadedFilename = json.filename;
-          transcribeBtn.disabled = false;
-        }
-      } catch (err) {
-        statusDiv.textContent = "Error: " + err.message;
-        transcribeBtn.disabled = true;
-      }
-    });
-
-    // Transcribe
-    transcribeBtn.addEventListener("click", async () => {
-      if (!lastUploadedFilename) return;
-      try {
-        const res = await fetch("http://localhost:3000/transcribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: lastUploadedFilename }),
-        });
-        if (!res.ok) {
-          transcriptPreview.textContent = "Failed to get transcript.";
-          editTextarea.disabled = true;
-          saveEditBtn.disabled = true;
-        } else {
-          const data = await res.json();
-          transcriptPreview.textContent = data.transcript;
-          editTextarea.value = data.transcript;
-          editTextarea.disabled = false;
-          saveEditBtn.disabled = false;
-        }
-      } catch (err) {
-        transcriptPreview.textContent = "Error: " + err.message;
-        editTextarea.disabled = true;
-        saveEditBtn.disabled = true;
-      }
-    });
-
-    // Save edited transcript
-    saveEditBtn.addEventListener("click", async () => {
-      if (!lastUploadedFilename || !editTextarea.value.trim()) return;
-      try {
-        const res = await fetch("http://localhost:3000/edit-transcript", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: lastUploadedFilename, transcript: editTextarea.value }),
-        });
-        if (!res.ok) {
-          editStatus.textContent = "Failed to save edits.";
-          extractActionsBtn.disabled = true;
-        } else {
-          editStatus.textContent = "Transcript saved! You can now extract action items.";
-          extractActionsBtn.disabled = false;
-        }
-      } catch (err) {
-        editStatus.textContent = "Error: " + err.message;
-        extractActionsBtn.disabled = true;
-      }
-    });
-
-    // Extract Action Items
-    extractActionsBtn.addEventListener("click", async () => {
-      const transcript = editTextarea.value.trim();
-      if (!transcript) {
-        actionItemsLabel.textContent = "No transcript to process.";
-        return;
-      }
-      try {
-        const res = await fetch("http://localhost:3000/extract-actions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript }),
-        });
-        if (!res.ok) {
-          actionItemsLabel.textContent = "Failed to extract action items.";
-          actionItemsList.textContent = "";
-        } else {
-          const data = await res.json();
-          actionItemsLabel.textContent = "Extracted Action Items:";
-          actionItemsList.textContent = data.actionItems.length ? data.actionItems.join("\n") : "(None found)";
-        }
-      } catch (err) {
-        actionItemsLabel.textContent = "Error extracting action items.";
-        actionItemsList.textContent = err.message;
-      }
-    });
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
